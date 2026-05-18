@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA转运 — 我的包裹</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red: #C8102E; --red-dark: #9B0C22; --red-light: #F5E6E9;
+  --gold: #D4A017; --bg: #F4F4F2; --surface: #FFFFFF;
+  --text: #1A1A1A; --muted: #6B6B6B; --border: #E8E4DE;
+  --sidebar-w: 220px; --radius: 12px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+.sidebar { width: var(--sidebar-w); background: #111; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; }
+.sidebar-logo { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.sidebar-logo-text { font-family: 'Noto Serif SC', serif; font-size: 18px; font-weight: 700; color: #fff; display: block; }
+.sidebar-logo-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.55); cursor: pointer; transition: all 0.15s; border: none; background: none; text-align: left; width: 100%; text-decoration: none; }
+.nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.nav-item.active { background: var(--red); color: #fff; }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+.nav-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.25); padding: 14px 12px 6px; }
+.sidebar-user { padding: 16px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 10px; }
+.user-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--red); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.user-name { font-size: 13px; font-weight: 600; color: #fff; }
+.user-level { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+.main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; }
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; height: 58px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+.topbar-title { font-size: 16px; font-weight: 600; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.btn { padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all 0.15s; }
+.btn-primary { background: var(--red); color: #fff; }
+.btn-primary:hover { background: var(--red-dark); }
+.btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+.btn-ghost:hover { border-color: var(--red); color: var(--red); }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+.content { padding: 28px; }
+
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+.stat-card-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+.stat-card-num { font-family: 'Noto Serif SC', serif; font-size: 28px; font-weight: 700; line-height: 1; }
+.stat-card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.stat-accent { border-left: 3px solid var(--red); }
+
+.tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto; }
+.tab-btn { padding: 10px 18px; font-size: 14px; font-weight: 500; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; transition: all 0.15s; font-family: inherit; margin-bottom: -1px; }
+.tab-btn.active { color: var(--red); border-bottom-color: var(--red); }
+.tab-count { display: inline-block; background: var(--bg); font-size: 11px; font-weight: 600; color: var(--muted); padding: 1px 7px; border-radius: 100px; margin-left: 6px; }
+.tab-btn.active .tab-count { background: var(--red-light); color: var(--red); }
+
+.bulk-bar { display: none; align-items: center; justify-content: space-between; background: #fff8e6; border: 1px solid #f0d060; border-radius: 10px; padding: 12px 18px; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; }
+.bulk-bar.show { display: flex; }
+.bulk-bar-left { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; color: #7a5a00; }
+.btn-pack { background: var(--red); color: #fff; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all 0.15s; }
+.btn-pack:hover:not(:disabled) { background: var(--red-dark); }
+.btn-pack:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.parcel-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 10px; transition: box-shadow 0.15s, border-color 0.15s; cursor: pointer; }
+.parcel-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+.parcel-card.selected { border-color: var(--red); background: #fffafa; }
+.parcel-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.parcel-check { width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--border); cursor: pointer; flex-shrink: 0; appearance: none; -webkit-appearance: none; background: #fff; transition: all 0.15s; display: none; }
+.parcel-check:checked { background: var(--red); border-color: var(--red); background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4l3 3 5-6' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 65%; }
+.parcel-info { flex: 1; min-width: 0; }
+.parcel-name { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+.parcel-meta { font-size: 13px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+.parcel-tracking { font-size: 12px; color: var(--muted); font-family: monospace; margin-top: 2px; }
+.parcel-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+.status-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 100px; }
+.status-pending  { background: #FFF8E6; color: #A07010; }
+.status-received { background: #E6F4EA; color: #1A7A35; }
+.status-shipping { background: #E8F0FE; color: #1A4FB0; }
+.status-customs  { background: #FDE8FF; color: #8B1AA0; }
+.status-delivered{ background: #E8F5E9; color: #2E7D32; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.modal-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: none; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 20px; padding: 36px 32px; width: 100%; max-width: 460px; position: relative; margin: auto; }
+.modal-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--bg); cursor: pointer; font-size: 16px; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.modal h2 { font-family: 'Noto Serif SC', serif; font-size: 22px; margin-bottom: 6px; }
+.modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group label { font-size: 13px; font-weight: 600; color: var(--text); }
+.form-group input, .form-group select, .form-group textarea { padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; color: var(--text); outline: none; transition: border-color 0.2s; font-family: inherit; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--red); }
+.form-group textarea { resize: vertical; min-height: 72px; }
+.optional-tag { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+.modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+.modal-footer .btn { flex: 1; padding: 12px; }
+
+.route-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+.route-option { border: 2px solid var(--border); border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.15s; text-align: center; }
+.route-option:hover { border-color: var(--red); }
+.route-option.selected { border-color: var(--red); background: var(--red-light); }
+.route-option-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.route-option-days { font-size: 12px; color: var(--muted); }
+.route-option.selected .route-option-days { color: var(--red); }
+
+.detail-panel { position: fixed; top: 0; right: -480px; bottom: 0; width: 420px; background: #fff; border-left: 1px solid var(--border); z-index: 150; transition: right 0.3s ease; display: flex; flex-direction: column; }
+.detail-panel.open { right: 0; }
+.detail-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.detail-header h3 { font-size: 16px; font-weight: 600; }
+.detail-close { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--bg); cursor: pointer; font-size: 16px; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.detail-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.detail-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.detail-row:last-child { border-bottom: none; }
+.detail-label { font-size: 13px; color: var(--muted); flex-shrink: 0; margin-right: 16px; }
+.detail-value { font-size: 13px; font-weight: 500; text-align: right; }
+.timeline { margin-top: 4px; }
+.timeline-item { display: flex; gap: 12px; margin-bottom: 14px; }
+.timeline-dot-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); flex-shrink: 0; margin-top: 3px; }
+.timeline-dot.done { background: var(--red); }
+.timeline-dot.current { background: var(--red); box-shadow: 0 0 0 3px var(--red-light); }
+.timeline-line { width: 2px; flex: 1; background: var(--border); margin: 4px 0; min-height: 16px; }
+.timeline-title { font-size: 13px; font-weight: 600; color: var(--muted); }
+.timeline-title.done, .timeline-title.current { color: var(--text); }
+.timeline-title.current { color: var(--red); }
+.timeline-time { font-size: 11px; color: var(--muted); margin-top: 1px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.address-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.address-tag { display: inline-block; background: var(--red-light); color: var(--red); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 100px; margin-bottom: 6px; }
+.address-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.address-detail { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.address-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.btn-text { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; font-family: inherit; padding: 4px 8px; border-radius: 6px; }
+.btn-text:hover { color: var(--red); background: var(--red-light); }
+
+@media (max-width: 700px) {
+  .sidebar { display: none !important; }
+  .main { margin-left: 0 !important; padding-bottom: 75px; width: 100%; }
+  .content { padding: 16px; }
+  .topbar { padding: 0 16px; }
+  .detail-panel { width: 100%; right: -100%; }
+  .route-options { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card { padding: 14px; }
+  .stat-card-num { font-size: 24px; }
+  .tabs { font-size: 12px; }
+  .tab-btn { padding: 8px 10px; font-size: 12px; }
+  .parcel-card { padding: 14px; }
+  .parcel-name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .parcel-tracking { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+  .modal { padding: 28px 20px; }
+  .bottom-nav {
+    display: flex !important;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    background: #111; border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  }
+}
+/* 防止全局横向溢出 */
+html, body { overflow-x: hidden; max-width: 100%; }
+.bottom-nav {
+  display: none;
+}
+.bottom-nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 500;
+  cursor: pointer; border: none; background: none; font-family: inherit;
+  padding: 4px 0;
+}
+.bottom-nav-item.active { color: var(--red); }
+.bottom-nav-icon { font-size: 20px; line-height: 1; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="sidebar-logo-text">CA转运</span>
+    <span class="sidebar-logo-sub">cazcn.com</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">我的账户</div>
+    <button class="nav-item active" onclick="showPage('parcels',this)"><span class="nav-icon">📦</span>我的包裹</button>
+    <button class="nav-item" onclick="showPage('packing',this)"><span class="nav-icon">📬</span>出库单</button>
+    <button class="nav-item" onclick="showPage('address',this)"><span class="nav-icon">🏠</span>收货地址</button>
+    <button class="nav-item" onclick="showPage('profile',this)"><span class="nav-icon">👤</span>个人中心</button>
+    <div class="nav-section-label">其他</div>
+    <a class="nav-item" href="index.html"><span class="nav-icon">🌐</span>返回首页</a>
+    <button class="nav-item" onclick="doLogout()"><span class="nav-icon">🚪</span>退出登录</button>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar">用</div>
+    <div>
+      <div class="user-name">加载中…</div>
+      <div class="user-level">普通用户</div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">我的包裹</div>
+    <div class="topbar-right">
+      <button class="btn btn-primary" id="btn-new" onclick="openModal('modal-new')">＋ 新增包裹</button>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- PARCELS PAGE -->
+    <div id="page-parcels">
+      <div class="stats-row">
+        <div class="stat-card stat-accent">
+          <div class="stat-card-label">全部包裹</div>
+          <div class="stat-card-num">0</div>
+          <div class="stat-card-sub">所有记录</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">待入库</div>
+          <div class="stat-card-num" style="color:var(--gold)">0</div>
+          <div class="stat-card-sub">等待到仓</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">已入库</div>
+          <div class="stat-card-num" style="color:#1A7A35">0</div>
+          <div class="stat-card-sub">可申请出库</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">运输中</div>
+          <div class="stat-card-num" style="color:#1A4FB0">0</div>
+          <div class="stat-card-sub">已发出</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="filterTab(this,'all')">全部 <span class="tab-count">0</span></button>
+        <button class="tab-btn" onclick="filterTab(this,'待入库')">待入库 <span class="tab-count">0</span></button>
+        <button class="tab-btn" onclick="filterTab(this,'已入库')">已入库 <span class="tab-count">0</span></button>
+        <button class="tab-btn" onclick="filterTab(this,'打包中')">打包中 <span class="tab-count">0</span></button>
+        <button class="tab-btn" onclick="filterTab(this,'运输中')">运输中 <span class="tab-count">0</span></button>
+        <button class="tab-btn" onclick="filterTab(this,'国内运输中')">国内运输中 <span class="tab-count">0</span></button>
+        <button class="tab-btn" onclick="filterTab(this,'已签收')">已签收 <span class="tab-count">0</span></button>
+      </div>
+
+      <!-- Bulk bar -->
+      <div class="bulk-bar" id="bulk-bar">
+        <div class="bulk-bar-left">
+          <input type="checkbox" id="check-all" onchange="toggleAll(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);">
+          <label for="check-all" style="cursor:pointer;">全选</label>
+          <span id="selected-count" style="color:var(--red);font-weight:700;">已选 0 件</span>
+        </div>
+        <button class="btn-pack" id="btn-apply-pack" disabled onclick="openPackModal()">申请出库</button>
+      </div>
+
+      <div id="parcel-list"></div>
+    </div>
+
+    <!-- PACKING PAGE -->
+    <div id="page-packing" style="display:none;">
+      <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center;">
+        <input type="text" id="pack-search" placeholder="搜索合箱单号…" oninput="filterPackingOrders(this.value)"
+          style="padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;font-family:inherit;flex:1;max-width:300px;">
+      </div>
+      <div id="packing-list"></div>
+    </div>
+
+    <!-- PROFILE PAGE -->
+    <div id="page-profile" style="display:none;">
+      <div style="max-width:480px;">
+        <div class="table-wrap" style="padding:24px;margin-bottom:16px;">
+          <div style="font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">基本信息</div>
+          <div class="form-group"><label>姓名</label><input type="text" id="profile-name" placeholder="您的姓名"></div>
+          <div class="form-group"><label>邮箱</label><input type="email" id="profile-email" placeholder="邮箱" readonly style="background:var(--bg);color:var(--muted);"></div>
+          <div class="form-group"><label>微信号</label><input type="text" id="profile-wechat" placeholder="方便客服联系"></div>
+          <button class="btn btn-primary" onclick="saveProfile()" id="btn-save-profile" style="width:100%;padding:11px;">保存信息</button>
+        </div>
+        <div class="table-wrap" style="padding:24px;">
+          <div style="font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">修改密码</div>
+          <div class="form-group"><label>新密码</label><input type="password" id="new-pwd" placeholder="至少6位"></div>
+          <div class="form-group"><label>确认密码</label><input type="password" id="confirm-pwd" placeholder="再次输入新密码"></div>
+          <button class="btn btn-primary" onclick="changePassword()" id="btn-change-pwd" style="width:100%;padding:11px;">修改密码</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADDRESS PAGE -->
+    <div id="page-address" style="display:none;">
+      <div style="max-width:560px;">
+        <div style="margin-bottom:24px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">🏭 加拿大收货地址</div>
+          <div id="ca-address-box" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;">
+            <div style="color:var(--muted);font-size:13px;">加载中…</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);">📍 国内收货地址</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-address')">＋ 新增地址</button>
+        </div>
+        <div id="address-list"></div>
+      </div>
+    </div>
+
+<!-- 手机底部导航 -->
+<nav class="bottom-nav">
+  <button class="bottom-nav-item active" id="bn-parcels" onclick="showPage('parcels',document.querySelector('.nav-item:nth-child(2)'));setBottomNav('bn-parcels')">
+    <span class="bottom-nav-icon">📦</span>包裹
+  </button>
+  <button class="bottom-nav-item" id="bn-packing" onclick="showPage('packing',document.querySelector('.nav-item:nth-child(3)'));setBottomNav('bn-packing')">
+    <span class="bottom-nav-icon">📬</span>出库单
+  </button>
+  <button class="bottom-nav-item" id="bn-new" onclick="openModal('modal-new')">
+    <span class="bottom-nav-icon" style="font-size:22px;background:var(--red);color:#fff;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 2px;">＋</span>新增
+  </button>
+  <button class="bottom-nav-item" id="bn-address" onclick="showPage('address',document.querySelector('.nav-item:nth-child(4)'));setBottomNav('bn-address')">
+    <span class="bottom-nav-icon">🏠</span>地址
+  </button>
+  <button class="bottom-nav-item" id="bn-profile" onclick="showPage('profile',document.querySelector('.nav-item:nth-child(5)'));setBottomNav('bn-profile')">
+    <span class="bottom-nav-icon">👤</span>我的
+  </button>
+</nav>
+
+<!-- NEW PARCEL MODAL -->
+<div class="modal-overlay" id="modal-new">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-new')">✕</button>
+    <h2>新增包裹</h2>
+    <p class="modal-sub">填写包裹信息，我们收到货物后会更新状态</p>
+    <div class="form-group">
+      <label>加拿大快递单号 *</label>
+      <input type="text" id="new-tracking" placeholder="例如：1Z999AA10123456784">
+    </div>
+    <div class="form-group">
+      <label>数量 *</label>
+      <input type="number" id="new-qty" placeholder="件数" min="1" value="1" style="max-width:140px;">
+    </div>
+    <div class="form-group">
+      <label>商品名称 <span class="optional-tag">选填</span></label>
+      <input type="text" id="new-name" placeholder="例如：Nike 运动鞋">
+    </div>
+    <div class="form-group">
+      <label>备注 <span class="optional-tag">选填</span></label>
+      <textarea id="new-remark" placeholder="例如：易碎品请加固，共3个包裹等"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new')">取消</button>
+      <button class="btn btn-primary" id="btn-submit-parcel" onclick="submitParcel()">提交</button>
+    </div>
+  </div>
+</div>
+
+<!-- PACK MODAL -->
+<div class="modal-overlay" id="modal-pack">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-pack')">✕</button>
+    <h2>申请出库</h2>
+    <p class="modal-sub" id="pack-info">已选包裹，请选择转运线路</p>
+    <div class="form-group">
+      <label>转运线路</label>
+      <div class="route-options">
+        <div class="route-option selected" id="route-bulk" onclick="selectRoute('bulk')">
+          <div class="route-option-name">🚛 始祖鸟大货转运</div>
+          <div class="route-option-days">预计 10 - 15 天</div>
+        </div>
+        <div class="route-option" id="route-small" onclick="selectRoute('small')">
+          <div class="route-option-name">✈️ 小包裹直邮</div>
+          <div class="route-option-days">预计 15 - 30 天</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:14px;">
+      <label>国内收货地址</label>
+      <select id="pack-address-select">
+        <option value="">请先添加收货地址</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>备注 <span class="optional-tag">选填</span></label>
+      <textarea id="pack-remark" placeholder="例如：请合并打包，或特殊处理要求"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-pack')">取消</button>
+      <button class="btn btn-primary" onclick="submitPack()">确认申请</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADDRESS MODAL -->
+<div class="modal-overlay" id="modal-address">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-address')">✕</button>
+    <h2>新增收货地址</h2>
+    <p class="modal-sub">出库时直接选择，无需重复填写</p>
+    <div class="form-group"><label>收件人姓名 *</label><input type="text" id="addr-name" placeholder="真实姓名"></div>
+    <div class="form-group"><label>手机号 *</label><input type="tel" id="addr-phone" placeholder="11位手机号"></div>
+    <div class="form-group"><label>详细地址 *</label><textarea id="addr-detail" placeholder="省 / 市 / 区 + 街道门牌号" style="min-height:60px;"></textarea></div>
+    <div class="form-group"><label>邮政编码 <span class="optional-tag">选填</span></label><input type="text" id="addr-postcode" placeholder="6位邮编"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-address')">取消</button>
+      <button class="btn btn-primary" onclick="submitAddress()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel" id="detail-panel">
+  <div class="detail-header">
+    <h3 id="detail-title">包裹详情</h3>
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="detail-body" id="detail-body"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://diukvdvfpfsftmjzwulp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdWt2ZHZmcGZzZnRtanp3dWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2OTU5NjAsImV4cCI6MjA5MzI3MTk2MH0.5UPgAUbhPXJhfnVuw4fF4YJe-AEOn2hWmrpeP46TzFA';
+
+function setCookie(name, value, days) {
+  const d = new Date();
+  d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+}
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+function deleteCookie(name) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
+}
+const cookieStorage = {
+  getItem: (key) => {
+    try { return localStorage.getItem(key) || getCookie('sb_' + btoa(key).slice(0,10)); }
+    catch(e) { return getCookie('sb_' + btoa(key).slice(0,10)); }
+  },
+  setItem: (key, value) => {
+    try { localStorage.setItem(key, value); } catch(e) {}
+    setCookie('sb_' + btoa(key).slice(0,10), value, 30);
+  },
+  removeItem: (key) => {
+    try { localStorage.removeItem(key); } catch(e) {}
+    deleteCookie('sb_' + btoa(key).slice(0,10));
+  }
+};
+
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    storage: cookieStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
+
+let currentUser = null;
+let currentTab = 'all';
+let allParcels = [];
+let allAddresses = [];
+
+async function initAuth() {
+  const { data: { session } } = await sbClient.auth.getSession();
+  if (!session) { window.location.href = 'index.html'; return; }
+  currentUser = session.user;
+
+  // 先从 users 表读，读不到就从 auth metadata 读
+  const { data: profile } = await sbClient.from('users').select('name').eq('id', currentUser.id).single();
+  const name = profile?.name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '用户';
+
+  document.querySelector('.user-name').textContent = name;
+  document.querySelector('.user-avatar').textContent = name[0].toUpperCase();
+
+  // 如果 users 表没有记录，自动补录
+  if (!profile) {
+    await sbClient.from('users').upsert({
+      id: currentUser.id,
+      email: currentUser.email,
+      name: currentUser.user_metadata?.name || null,
+      phone: currentUser.user_metadata?.phone || null,
+    });
+  }
+
+  await loadParcels();
+  await loadAddresses();
+}
+
+async function loadParcels() {
+  const { data } = await sbClient.from('parcels').select('*').eq('user_id', currentUser.id).order('submitted_at', { ascending: false });
+  allParcels = data || [];
+  renderParcelList(allParcels);
+  updateStats();
+}
+
+function updateTabCounts() {
+  const total = allParcels.length;
+  const pending = allParcels.filter(p=>p.status==='待入库').length;
+  const received = allParcels.filter(p=>p.status==='已入库').length;
+  const packing = allParcels.filter(p=>p.status==='打包中').length;
+  const shipping = allParcels.filter(p=>p.status==='运输中').length;
+  const domestic = allParcels.filter(p=>p.status==='国内运输中').length;
+  const delivered = allParcels.filter(p=>p.status==='已签收').length;
+  const tabs = document.querySelectorAll('.tab-btn');
+  if (tabs[0]) tabs[0].innerHTML = `全部 <span class="tab-count">${total}</span>`;
+  if (tabs[1]) tabs[1].innerHTML = `待入库 <span class="tab-count">${pending}</span>`;
+  if (tabs[2]) tabs[2].innerHTML = `已入库 <span class="tab-count">${received}</span>`;
+  if (tabs[3]) tabs[3].innerHTML = `打包中 <span class="tab-count">${packing}</span>`;
+  if (tabs[4]) tabs[4].innerHTML = `运输中 <span class="tab-count">${shipping}</span>`;
+  if (tabs[5]) tabs[5].innerHTML = `国内运输中 <span class="tab-count">${domestic}</span>`;
+  if (tabs[6]) tabs[6].innerHTML = `已签收 <span class="tab-count">${delivered}</span>`;
+}
+
+function updateStats() {
+  const nums = document.querySelectorAll('.stat-card-num');
+  nums[0].textContent = allParcels.length;
+  nums[1].textContent = allParcels.filter(p=>p.status==='待入库').length;
+  nums[2].textContent = allParcels.filter(p=>p.status==='已入库').length;
+  nums[3].textContent = allParcels.filter(p=>['运输中','清关中','国内派送中'].includes(p.status)).length;
+  updateTabCounts();
+}
+
+function statusClass(s) {
+  return {'待入库':'status-pending','已入库':'status-received','打包中':'status-received','运输中':'status-shipping','国内运输中':'status-shipping','清关中':'status-customs','国内派送中':'status-shipping','已签收':'status-delivered'}[s]||'status-pending';
+}
+
+function renderParcelList(parcels) {
+  const list = document.getElementById('parcel-list');
+  if (!parcels.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">暂无包裹</div><div class="empty-sub">点击右上角「新增包裹」开始吧</div></div>`;
+    return;
+  }
+  const isInbox = currentTab === '已入库';
+  list.innerHTML = parcels.map((p) => {
+    // 用真实 id 找 allParcels 里的索引
+    const realIdx = allParcels.findIndex(ap=>ap.id===p.id);
+    return `
+    <div class="parcel-card" data-status="${p.status}" data-idx="${realIdx}" onclick="handleCardClick(event,${realIdx})">
+      <div class="parcel-row">
+        <input type="checkbox" class="parcel-check inbox-check" onclick="event.stopPropagation()" onchange="updateSelection()" style="display:${isInbox?'block':'none'}">
+        <div class="parcel-info">
+          <div class="parcel-name">${p.item_name||p.tracking_ca||'未命名包裹'}</div>
+          <div class="parcel-meta">
+            <span>数量：${p.quantity}件</span>
+            <span>${new Date(p.submitted_at).toLocaleDateString('zh-CN')} 提交</span>
+            ${p.route?`<span>${p.route}</span>`:''}
+          </div>
+          ${p.tracking_ca?`<div class="parcel-tracking">CA单号：${p.tracking_ca}</div>`:''}
+          ${p.tracking_cn?`<div class="parcel-tracking">国际单号：${p.tracking_cn}</div>`:''}
+        </div>
+        <div class="parcel-right"><span class="status-badge ${statusClass(p.status)}"><span class="status-dot"></span>${p.status}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadAddresses() {
+  const { data } = await sbClient.from('addresses').select('*').eq('user_id', currentUser.id).order('is_default', { ascending: false });
+  allAddresses = data || [];
+  renderAddressList();
+  updateAddressSelects();
+}
+
+function renderAddressList() {
+  const list = document.getElementById('address-list');
+  if (!allAddresses.length) { list.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:14px;">暂无收货地址，点击上方添加</div>`; return; }
+  list.innerHTML = allAddresses.map(a => `
+    <div class="address-card">
+      <div class="address-info">
+        ${a.is_default?'<div class="address-tag">默认</div>':''}
+        <div class="address-name">${a.receiver_name} · ${a.phone}</div>
+        <div class="address-detail">${a.address}${a.postcode?' '+a.postcode:''}</div>
+      </div>
+      <div class="address-actions"><button class="btn-text" onclick="deleteAddress('${a.id}')">删除</button></div>
+    </div>`).join('');
+}
+
+function updateAddressSelects() {
+  const sel = document.getElementById('pack-address-select');
+  if (!sel) return;
+  sel.innerHTML = allAddresses.length
+    ? allAddresses.map(a=>`<option value="${a.id}">${a.receiver_name} · ${a.address.slice(0,24)}…</option>`).join('')
+    : '<option value="">请先添加收货地址</option>';
+}
+
+async function submitParcel() {
+  const tracking = document.getElementById('new-tracking').value.trim();
+  const qty = parseInt(document.getElementById('new-qty').value)||1;
+  const name = document.getElementById('new-name').value.trim();
+  const remark = document.getElementById('new-remark').value.trim();
+  if (!tracking) { alert('请填写快递单号'); return; }
+  const btn = document.getElementById('btn-submit-parcel');
+  btn.disabled=true; btn.textContent='提交中…';
+
+  // 检查是否有管理员预录的无主包裹
+  const { data: existing } = await sbClient
+    .from('parcels')
+    .select('id, status')
+    .eq('tracking_ca', tracking)
+    .is('user_id', null)
+    .maybeSingle();
+
+  let error;
+  if (existing) {
+    // 匹配到无主包裹，绑定到当前用户
+    const { error: e } = await sbClient.from('parcels').update({
+      user_id: currentUser.id,
+      quantity: qty,
+      item_name: name||null,
+      remark: remark||null,
+    }).eq('id', existing.id);
+    error = e;
+    if (!error) alert('✅ 包裹已找到并关联！当前状态：' + existing.status);
+  } else {
+    // 正常新增
+    const { error: e } = await sbClient.from('parcels').insert({
+      user_id: currentUser.id,
+      tracking_ca: tracking,
+      quantity: qty,
+      item_name: name||null,
+      remark: remark||null,
+      status: '待入库'
+    });
+    error = e;
+  }
+
+  btn.disabled=false; btn.textContent='提交';
+  if (error) { alert('提交失败：'+error.message); return; }
+  closeModal('modal-new');
+  ['new-tracking','new-name','new-remark'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('new-qty').value='1';
+  await loadParcels();
+}
+
+async function submitAddress() {
+  const name=document.getElementById('addr-name').value.trim();
+  const phone=document.getElementById('addr-phone').value.trim();
+  const address=document.getElementById('addr-detail').value.trim();
+  const postcode=document.getElementById('addr-postcode').value.trim();
+  if (!name||!phone||!address) { alert('请填写姓名、手机号和地址'); return; }
+  const { error } = await sbClient.from('addresses').insert({ user_id:currentUser.id, receiver_name:name, phone, address, postcode:postcode||null, is_default:allAddresses.length===0 });
+  if (error) { alert('保存失败：'+error.message); return; }
+  closeModal('modal-address');
+  ['addr-name','addr-phone','addr-detail','addr-postcode'].forEach(id=>document.getElementById(id).value='');
+  await loadAddresses();
+}
+
+async function deleteAddress(id) {
+  if (!confirm('确认删除此地址？')) return;
+  await sbClient.from('addresses').delete().eq('id',id);
+  await loadAddresses();
+}
+
+async function submitPack() {
+  try {
+    const checkedCards = [...document.querySelectorAll('.inbox-check:checked')];
+    const selectedParcels = checkedCards.map(cb=>allParcels[parseInt(cb.closest('.parcel-card').dataset.idx)]).filter(Boolean);
+    const parcelIds = selectedParcels.map(p=>p.id);
+    const route = document.getElementById('route-bulk').classList.contains('selected')?'始祖鸟大货转运':'小包裹直邮';
+    const addressId = document.getElementById('pack-address-select')?.value;
+    const remark = document.getElementById('pack-remark').value.trim();
+
+    if (!parcelIds.length) { alert('请先勾选包裹'); return; }
+    if (!addressId) { alert('请先在「收货地址」页面添加收货地址'); return; }
+
+    const isBulk = route === '始祖鸟大货转运';
+
+    if (isBulk) {
+      // 大货：合并成一个出库单
+      const totalQty = selectedParcels.reduce((sum,p)=>sum+(p.quantity||1),0);
+      const { error } = await sbClient.from('pack_requests').insert({
+        user_id: currentUser.id,
+        parcel_ids: parcelIds,
+        route,
+        address_id: addressId,
+        remark: remark||null,
+        total_quantity: totalQty
+      });
+      if (error) { alert('申请失败：'+error.message); return; }
+    } else {
+      // 小包裹直邮：每个包裹单独一条记录
+      const inserts = selectedParcels.map(p => ({
+        user_id: currentUser.id,
+        parcel_ids: [p.id],
+        route,
+        address_id: addressId,
+        remark: remark||null,
+        total_quantity: p.quantity||1
+      }));
+      const { error } = await sbClient.from('pack_requests').insert(inserts);
+      if (error) { alert('申请失败：'+error.message); return; }
+    }
+
+    // 把已选包裹状态改为"打包中"
+    await sbClient.from('parcels')
+      .update({ status:'打包中', updated_at:new Date().toISOString() })
+      .in('id', parcelIds);
+
+    closeModal('modal-pack');
+    document.getElementById('pack-remark').value='';
+    await loadParcels();
+    alert(isBulk
+      ? '合箱出库申请已提交！可在「出库单」页面查看进度。'
+      : `已为 ${selectedParcels.length} 个包裹分别提交直邮申请！`
+    );
+  } catch(e) {
+    alert('提交出错：'+e.message);
+    console.error(e);
+  }
+}
+
+async function loadCaAddress() {
+  const box = document.getElementById('ca-address-box');
+  if (!box) return;
+  const { data } = await sbClient.from('ca_addresses').select('*').eq('user_id', currentUser.id).single();
+  if (data) {
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">您的专属收货代码</div>
+          <div style="font-family:monospace;font-size:20px;font-weight:700;color:var(--red);">${data.user_code}</div>
+        </div>
+        <button onclick="copyAddress()" style="padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;">📋 复制地址</button>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:16px;font-size:14px;line-height:2;" id="ca-addr-text">
+        <div><span style="color:var(--muted);font-size:12px;">收件人</span><br><strong>${data.receiver_name}</strong></div>
+        <div style="margin-top:8px;"><span style="color:var(--muted);font-size:12px;">地址</span><br><strong>${data.address}</strong></div>
+        <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div><span style="color:var(--muted);font-size:12px;">城市</span><br><strong>${data.city}</strong></div>
+          <div><span style="color:var(--muted);font-size:12px;">省份</span><br><strong>${data.province}</strong></div>
+          <div><span style="color:var(--muted);font-size:12px;">邮编</span><br><strong>${data.postcode}</strong></div>
+        </div>
+        <div style="margin-top:8px;"><span style="color:var(--muted);font-size:12px;">电话</span><br><strong>${data.phone}</strong></div>
+        <div style="margin-top:8px;"><span style="color:var(--muted);font-size:12px;">国家</span><br><strong>${data.country}</strong></div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted);background:#fff8e6;padding:10px 14px;border-radius:8px;border:1px solid #f0d060;">
+        💡 购物时收件人填写您的专属代码，我们收到包裹后会自动匹配到您的账户
+      </div>`;
+  } else {
+    // 没有地址，自动生成
+    const profile = await sbClient.from('users').select('user_code,name').eq('id', currentUser.id).single();
+    let code = profile.data?.user_code;
+    if (!code) {
+      code = 'creek' + Array.from({length:4}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random()*26)]).join('');
+      await sbClient.from('users').update({user_code: code}).eq('id', currentUser.id);
+    }
+    await sbClient.from('ca_addresses').insert({
+      user_id: currentUser.id, user_code: code, receiver_name: code,
+      address: '3 Weton Manor SW', city: 'Calgary', province: 'AB',
+      postcode: 'T3H 5E7', phone: '5879733729', country: 'Canada'
+    });
+    loadCaAddress();
+  }
+}
+
+function copyAddress() {
+  const box = document.getElementById('ca-addr-text');
+  if (!box) return;
+  const text = box.innerText.replace(/\n+/g, '\n').trim();
+  navigator.clipboard.writeText(text).then(()=>alert('地址已复制！')).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert('地址已复制！');
+  });
+}
+
+async function loadProfile() {
+  const { data: profile } = await sbClient.from('users').select('*').eq('id', currentUser.id).single();
+  if (profile) {
+    document.getElementById('profile-name').value = profile.name||'';
+    document.getElementById('profile-wechat').value = profile.phone||'';
+  }
+  document.getElementById('profile-email').value = currentUser.email||'';
+}
+
+async function saveProfile() {
+  const name = document.getElementById('profile-name').value.trim();
+  const wechat = document.getElementById('profile-wechat').value.trim();
+  if (!name) { alert('请填写姓名'); return; }
+  const btn = document.getElementById('btn-save-profile');
+  btn.disabled=true; btn.textContent='保存中…';
+  const { error } = await sbClient.from('users').upsert({
+    id: currentUser.id,
+    email: currentUser.email,
+    name, phone: wechat||null
+  });
+  btn.disabled=false; btn.textContent='保存信息';
+  if (error) { alert('保存失败：'+error.message); return; }
+  // 更新侧边栏显示
+  document.querySelector('.user-name').textContent = name;
+  document.querySelector('.user-avatar').textContent = name[0].toUpperCase();
+  alert('信息已更新！');
+}
+
+async function changePassword() {
+  const pwd = document.getElementById('new-pwd').value;
+  const confirm = document.getElementById('confirm-pwd').value;
+  if (!pwd || pwd.length < 6) { alert('密码至少需要6位'); return; }
+  if (pwd !== confirm) { alert('两次密码不一致'); return; }
+  const btn = document.getElementById('btn-change-pwd');
+  btn.disabled=true; btn.textContent='修改中…';
+  const { error } = await sbClient.auth.updateUser({ password: pwd });
+  btn.disabled=false; btn.textContent='修改密码';
+  if (error) { alert('修改失败：'+error.message); return; }
+  document.getElementById('new-pwd').value='';
+  document.getElementById('confirm-pwd').value='';
+  alert('密码修改成功！');
+}
+
+async function doLogout() { await sbClient.auth.signOut(); window.location.href='index.html'; }
+
+function showPage(page,el) {
+  document.getElementById('page-parcels').style.display=page==='parcels'?'':'none';
+  document.getElementById('page-packing').style.display=page==='packing'?'':'none';
+  document.getElementById('page-address').style.display=page==='address'?'':'none';
+  document.getElementById('page-profile').style.display=page==='profile'?'':'none';
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  const titles={parcels:'我的包裹',packing:'出库单',address:'收货地址',profile:'个人中心'};
+  document.getElementById('page-title').textContent=titles[page]||'';
+  document.getElementById('btn-new').style.display=page==='parcels'?'':'none';
+  if (page==='packing') loadPackingOrders();
+  if (page==='parcels') loadParcels();
+  if (page==='address') loadCaAddress();
+  if (page==='profile') loadProfile();
+}
+
+let allPackingOrders = [];
+
+function filterPackingOrders(q) {
+  const lower = q.toLowerCase();
+  const filtered = q ? allPackingOrders.filter(r=>(r.order_no||'').toLowerCase().includes(lower)) : allPackingOrders;
+  renderPackingList(filtered);
+}
+
+function togglePackDetail(card) {
+  const detail = card.querySelector('.pack-detail');
+  const icon = card.querySelector('.expand-icon');
+  const isOpen = detail.style.display !== 'none';
+  detail.style.display = isOpen ? 'none' : 'block';
+  icon.style.transform = isOpen ? '' : 'rotate(90deg)';
+}
+
+async function loadPackingOrders() {
+  const list = document.getElementById('packing-list');
+  list.innerHTML = '<div style="padding:24px;color:var(--muted);font-size:14px;text-align:center;">加载中…</div>';
+  const { data } = await sbClient
+    .from('pack_requests')
+    .select('*, addresses(receiver_name, address, phone)')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+  allPackingOrders = data || [];
+  renderPackingList(allPackingOrders);
+}
+
+function renderPackingList(orders) {
+  const list = document.getElementById('packing-list');
+  if (!orders.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📬</div><div class="empty-title">暂无出库单</div><div class="empty-sub">在「已入库」中勾选包裹申请出库</div></div>`;
+    return;
+  }
+
+  const statusMap = { pending:'待确认', approved:'待支付', paid:'已支付', shipped:'已发货' };
+  const statusClass = { pending:'status-pending', approved:'status-pending', paid:'status-received', shipped:'status-shipping' };
+
+  list.innerHTML = orders.map((r,idx) => {
+    const isBulk = r.route === '始祖鸟大货转运';
+    const statusMap = { pending:'待确认', approved:'待支付', paid:'已支付', shipped:'已发货' };
+    const statusClass = { pending:'status-pending', approved:'status-pending', paid:'status-received', shipped:'status-shipping' };
+    const trackingList = r.tracking_cn_list || (r.tracking_cn ? [r.tracking_cn] : []);
+
+    const title = isBulk ? (r.order_no||'合箱单') : '小包裹直邮';
+    const subtitle = `${r.route} · ${r.total_quantity||1}件 · ${new Date(r.created_at).toLocaleDateString('zh-CN')}`;
+
+    const detail = `
+      <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px;">
+        <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:10px;font-size:13px;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px;">收货地址</div>
+          <div style="font-weight:600;">${r.addresses?.receiver_name||'—'} · ${r.addresses?.phone||''}</div>
+          <div style="color:var(--muted);margin-top:2px;">${r.addresses?.address||'—'}</div>
+        </div>
+
+        ${r.status==='approved' && r.total_amount ? `
+        <div style="background:#fff8e6;border:1px solid #f0d060;border-radius:8px;padding:14px;margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:700;color:#8a6000;margin-bottom:8px;">💰 待支付</div>
+          <div style="display:flex;gap:20px;margin-bottom:8px;">
+            ${r.total_weight?`<div><div style="font-size:11px;color:#8a6000;">重量</div><div style="font-weight:700;">${r.total_weight} lb</div></div>`:''}
+            <div><div style="font-size:11px;color:#8a6000;">运费</div><div style="font-weight:700;color:var(--red);">CA$${r.total_amount}</div></div>
+          </div>
+          <div style="font-size:12px;color:#8a6000;">请通过微信转账支付，支付后请告知客服</div>
+        </div>` : ''}
+
+        ${(r.status==='paid'||r.status==='shipped')&&(r.total_weight||r.total_amount)?`
+        <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:24px;">
+          ${r.total_weight?`<div><div style="font-size:11px;color:var(--muted);">重量</div><div style="font-weight:700;">${r.total_weight} lb</div></div>`:''}
+          ${r.total_amount?`<div><div style="font-size:11px;color:var(--muted);">运费</div><div style="font-weight:700;">CA$${r.total_amount}</div></div>`:''}
+        </div>`:''}
+
+        ${trackingList.length?`
+        <div style="background:#E6F4EA;border-radius:8px;padding:12px;border:1px solid #b2dfb8;">
+          <div style="font-size:11px;font-weight:700;color:#1A7A35;margin-bottom:8px;">📍 国内物流</div>
+          ${trackingList.map(t=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-family:monospace;font-size:14px;font-weight:700;color:#1A7A35;">${t}</span>
+              <a href="https://t.17track.net/zh-cn#nums=${t}" target="_blank" style="color:var(--red);font-size:12px;font-weight:600;text-decoration:none;">查物流 →</a>
+            </div>`).join('')}
+        </div>`:`
+        <div style="font-size:13px;color:var(--muted);text-align:center;padding:8px 0;">
+          ${r.status==='pending'?'等待确认…':r.status==='approved'?'支付后安排发货':'运单号待填写'}
+        </div>`}
+
+        ${r.remark?`<div style="font-size:12px;color:var(--muted);margin-top:8px;">备注：${r.remark}</div>`:''}
+      </div>`;
+
+    return `
+    <div class="parcel-card" style="margin-bottom:10px;cursor:pointer;" onclick="togglePackDetail(this)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:15px;${isBulk?'font-family:monospace;color:var(--red);':''}">${title}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${subtitle}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+          <span class="status-badge ${statusClass[r.status]||'status-pending'}"><span class="status-dot"></span>${statusMap[r.status]||r.status}</span>
+          <span style="color:var(--muted);font-size:16px;transition:transform 0.2s;" class="expand-icon">›</span>
+        </div>
+      </div>
+      <div class="pack-detail" style="display:none;">${detail}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterTab(btn,status) {
+  currentTab=status;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const isInbox=status==='已入库';
+  document.getElementById('bulk-bar').classList.toggle('show',isInbox);
+  let filtered;
+  if (status==='all') filtered=allParcels;
+  else if (status==='已入库') filtered=allParcels.filter(p=>p.status==='已入库');
+  else filtered=allParcels.filter(p=>p.status===status);
+  renderParcelList(filtered);
+  // 渲染完再设置 checkbox 显示
+  setTimeout(()=>{
+    document.querySelectorAll('.inbox-check').forEach(cb=>{
+      cb.style.display=isInbox?'block':'none';
+      cb.checked=false;
+    });
+    document.getElementById('check-all').checked=false;
+    updateSelection();
+  }, 0);
+}
+
+function handleCardClick(e,idx) {
+  if (currentTab!=='已入库') { openDetail(idx); return; }
+  const cb=e.currentTarget.querySelector('.inbox-check');
+  if (e.target===cb) return;
+  cb.checked=!cb.checked; updateSelection();
+}
+
+function toggleAll(master) {
+  document.querySelectorAll('.inbox-check').forEach(cb=>{if(cb.closest('.parcel-card').style.display!=='none')cb.checked=master.checked;});
+  updateSelection();
+}
+
+function updateSelection() {
+  const checked=[...document.querySelectorAll('.inbox-check:checked')];
+  document.getElementById('selected-count').textContent=`已选 ${checked.length} 件`;
+  const btn=document.getElementById('btn-apply-pack'); btn.disabled=checked.length===0;
+  document.querySelectorAll('.parcel-card').forEach(card=>{const cb=card.querySelector('.inbox-check');if(cb)card.classList.toggle('selected',cb.checked);});
+  const all=[...document.querySelectorAll('.inbox-check')].filter(c=>c.closest('.parcel-card').style.display!=='none');
+  document.getElementById('check-all').checked=all.length>0&&all.every(c=>c.checked);
+}
+
+function openPackModal() {
+  const count=document.querySelectorAll('.inbox-check:checked').length;
+  document.getElementById('pack-info').textContent=`已选 ${count} 件包裹，请选择转运线路`;
+  openModal('modal-pack');
+}
+function selectRoute(t) {
+  document.getElementById('route-bulk').classList.toggle('selected',t==='bulk');
+  document.getElementById('route-small').classList.toggle('selected',t==='small');
+}
+
+function openModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+['modal-new','modal-pack','modal-address'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeModal(id);});
+});
+
+// 17TRACK
+const TRACK_KEY='C8D8FFB55120451ED5D99AFFED2FBF4B';
+async function queryTracking(num) {
+  try {
+    const res=await fetch('https://api.17track.net/track/v2.2/gettrackinfo',{method:'POST',headers:{'Content-Type':'application/json','17token':TRACK_KEY},body:JSON.stringify([{number:num}])});
+    const data=await res.json();
+    if(data.code===0&&data.data?.accepted?.length>0)return data.data.accepted[0].track;
+    return null;
+  } catch(e){return null;}
+}
+function renderTrackEvents(events) {
+  if(!events||!events.length)return '<div style="color:var(--muted);font-size:13px;padding:12px 0;">暂无物流记录</div>';
+  return events.map((e,i)=>{
+    const isFirst=i===0,isLast=i===events.length-1;
+    return `<div class="timeline-item"><div class="timeline-dot-wrap"><div class="timeline-dot ${isFirst?'current':'done'}"></div>${!isLast?'<div class="timeline-line"></div>':''}</div><div class="timeline-content"><div class="timeline-title ${isFirst?'current':'done'}">${e.z||e.d||'物流更新'}</div><div class="timeline-time">${e.a||''} ${e.l?'· '+e.l:''}</div></div></div>`;
+  }).join('');
+}
+
+async function openDetail(idx) {
+  const p=allParcels[idx]; if(!p)return;
+  document.getElementById('detail-title').textContent=p.item_name||'包裹详情';
+  let html=`
+    <div class="detail-row"><span class="detail-label">商品名称</span><span class="detail-value">${p.item_name||'—'}</span></div>
+    <div class="detail-row"><span class="detail-label">数量</span><span class="detail-value">${p.quantity} 件</span></div>
+    <div class="detail-row"><span class="detail-label">当前状态</span><span class="detail-value"><span class="status-badge ${statusClass(p.status)}">${p.status}</span></span></div>
+    <div class="detail-row"><span class="detail-label">CA快递单号</span><span class="detail-value" style="font-family:monospace;font-size:12px;">${p.tracking_ca||'—'}</span></div>
+    ${p.tracking_cn?`<div class="detail-row"><span class="detail-label">国际运单号</span><span class="detail-value" style="font-family:monospace;font-size:12px;">${p.tracking_cn}</span></div>`:''}
+    ${p.route?`<div class="detail-row"><span class="detail-label">转运线路</span><span class="detail-value">${p.route}</span></div>`:''}
+    <div class="detail-row"><span class="detail-label">提交时间</span><span class="detail-value">${new Date(p.submitted_at).toLocaleString('zh-CN')}</span></div>
+    ${p.remark?`<div class="detail-row"><span class="detail-label">备注</span><span class="detail-value">${p.remark}</span></div>`:''}`;
+  if (p.tracking_cn) {
+    html+=`<div style="margin-top:18px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">📍 国内物流轨迹</div>
+      <div id="live-tracking" style="padding:12px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--muted);">
+        <div style="display:flex;align-items:center;gap:8px;"><div style="width:14px;height:14px;border:2px solid var(--red);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></div>正在查询实时物流…</div></div>`;
+  } else {
+    html+=`<div style="margin-top:16px;padding:14px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--muted);text-align:center;">国内运单号录入后可查看实时物流</div>`;
+  }
+  document.getElementById('detail-body').innerHTML=html;
+  document.getElementById('detail-panel').classList.add('open');
+  if (p.tracking_cn) {
+    const track=await queryTracking(p.tracking_cn);
+    const el=document.getElementById('live-tracking'); if(!el)return;
+    if(track&&track.z&&track.z.length>0){el.innerHTML=`<div class="timeline">${renderTrackEvents(track.z)}</div>`;}
+    else{el.innerHTML=`<div style="color:var(--muted);font-size:13px;">暂未查询到物流信息，可能尚未更新。</div><a href="https://t.17track.net/zh-cn#nums=${p.tracking_cn}" target="_blank" style="display:inline-block;margin-top:10px;color:var(--red);font-size:13px;font-weight:600;text-decoration:none;">🔗 在 17track 官网查看 →</a>`;}
+  }
+}
+function setBottomNav(id) {
+  document.querySelectorAll('.bottom-nav-item').forEach(b=>b.classList.remove('active'));
+  const el = document.getElementById(id);
+  if(el) el.classList.add('active');
+}
+
+function closeDetail(){document.getElementById('detail-panel').classList.remove('open');}
+
+initAuth();
+</script>
+</body>
+</html>

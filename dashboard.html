@@ -288,11 +288,9 @@ html, body { overflow-x: hidden; max-width: 100%; }
     <div id="page-address" style="display:none;">
       <div style="max-width:560px;">
         <div style="margin-bottom:24px;">
-          <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">🏭 加拿大仓库地址</div>
-          <div style="background:var(--surface);border:2px dashed var(--border);border-radius:var(--radius);padding:28px;text-align:center;color:var(--muted);">
-            <div style="font-size:32px;margin-bottom:10px;">🚧</div>
-            <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;">仓库地址即将开放</div>
-            <p style="font-size:13px;">开放后将显示在此处，购物时直接填写即可</p>
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">🏭 加拿大收货地址</div>
+          <div id="ca-address-box" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;">
+            <div style="color:var(--muted);font-size:13px;">加载中…</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -708,7 +706,61 @@ async function submitPack() {
   }
 }
 
-async function loadProfile() {
+async function loadCaAddress() {
+  const box = document.getElementById('ca-address-box');
+  if (!box) return;
+  const { data } = await sbClient.from('ca_addresses').select('*').eq('user_id', currentUser.id).single();
+  if (data) {
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">您的专属收货代码</div>
+          <div style="font-family:monospace;font-size:20px;font-weight:700;color:var(--red);">${data.user_code}</div>
+        </div>
+        <button onclick="copyAddress()" style="padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;">📋 复制地址</button>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:16px;font-size:14px;line-height:2;" id="ca-addr-text">
+        <div><span style="color:var(--muted);font-size:12px;">收件人</span><br><strong>${data.receiver_name}</strong></div>
+        <div style="margin-top:8px;"><span style="color:var(--muted);font-size:12px;">地址</span><br><strong>${data.address}</strong></div>
+        <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div><span style="color:var(--muted);font-size:12px;">城市</span><br><strong>${data.city}</strong></div>
+          <div><span style="color:var(--muted);font-size:12px;">省份</span><br><strong>${data.province}</strong></div>
+          <div><span style="color:var(--muted);font-size:12px;">邮编</span><br><strong>${data.postcode}</strong></div>
+        </div>
+        <div style="margin-top:8px;"><span style="color:var(--muted);font-size:12px;">电话</span><br><strong>${data.phone}</strong></div>
+        <div style="margin-top:8px;"><span style="color:var(--muted);font-size:12px;">国家</span><br><strong>${data.country}</strong></div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted);background:#fff8e6;padding:10px 14px;border-radius:8px;border:1px solid #f0d060;">
+        💡 购物时收件人填写您的专属代码，我们收到包裹后会自动匹配到您的账户
+      </div>`;
+  } else {
+    // 没有地址，自动生成
+    const profile = await sbClient.from('users').select('user_code,name').eq('id', currentUser.id).single();
+    let code = profile.data?.user_code;
+    if (!code) {
+      code = 'creek' + Array.from({length:4}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random()*26)]).join('');
+      await sbClient.from('users').update({user_code: code}).eq('id', currentUser.id);
+    }
+    await sbClient.from('ca_addresses').insert({
+      user_id: currentUser.id, user_code: code, receiver_name: code,
+      address: '3 Weton Manor SW', city: 'Calgary', province: 'AB',
+      postcode: 'T3H 5E7', phone: '5879733729', country: 'Canada'
+    });
+    loadCaAddress();
+  }
+}
+
+function copyAddress() {
+  const box = document.getElementById('ca-addr-text');
+  if (!box) return;
+  const text = box.innerText.replace(/\n+/g, '\n').trim();
+  navigator.clipboard.writeText(text).then(()=>alert('地址已复制！')).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert('地址已复制！');
+  });
+}
   const { data: profile } = await sbClient.from('users').select('*').eq('id', currentUser.id).single();
   if (profile) {
     document.getElementById('profile-name').value = profile.name||'';
@@ -765,6 +817,7 @@ function showPage(page,el) {
   document.getElementById('btn-new').style.display=page==='parcels'?'':'none';
   if (page==='packing') loadPackingOrders();
   if (page==='parcels') loadParcels();
+  if (page==='address') loadCaAddress();
   if (page==='profile') loadProfile();
 }
 

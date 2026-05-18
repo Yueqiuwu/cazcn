@@ -837,18 +837,40 @@ async function doRegister() {
   if (!name || !email || !password) { showError('请填写姓名、邮箱和密码'); return; }
   if (password.length < 6) { showError('密码至少需要6位'); return; }
   setLoading('btn-register', true);
+
+  // 生成用户代码 creek + 4位随机字母
+  const randomCode = 'creek' + Array.from({length:4}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random()*26)]).join('');
+
   const { data, error } = await sbClient.auth.signUp({
     email, password,
-    options: { data: { name, wechat } }
+    options: { data: { name, wechat, user_code: randomCode } }
   });
   setLoading('btn-register', false);
   if (error) { showError('注册失败：' + error.message); return; }
+
   if (data.user) {
-    await sbClient.from('users').insert({ id: data.user.id, email, name, phone: wechat||null });
+    // 写入 users 表
+    await sbClient.from('users').insert({
+      id: data.user.id, email, name, phone: wechat||null, user_code: randomCode
+    });
+    // 自动生成加拿大收货地址
+    await sbClient.from('ca_addresses').insert({
+      user_id: data.user.id,
+      user_code: randomCode,
+      receiver_name: randomCode,
+      address: '3 Weton Manor SW',
+      city: 'Calgary',
+      province: 'AB',
+      postcode: 'T3H 5E7',
+      phone: '5879733729',
+      country: 'Canada'
+    });
   }
   closeModal();
+  setCookie('ca_email', email, 180);
   alert('注册成功！正在跳转到您的包裹页面。');
   window.location.href = 'dashboard.html';
+}
 }
 
 function openModal(tab) {

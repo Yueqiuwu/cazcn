@@ -622,6 +622,7 @@ function renderParcels(data) {
       <td><div class="td-actions">
         ${p.status==='待入库' ? `<button class="btn-action green" onclick="quickCheckIn('${p.id}',event)">✓ 入库</button>` : ''}
         <button class="btn-action" onclick="openStatusModal('${p.id}','${p.tracking_ca||''}','${p.status}','${p.tracking_cn||''}')">更新状态</button>
+        <button class="btn-action" style="color:#c00;border-color:#f0c0c0;" onclick="adminDeleteParcel('${p.id}')">删除</button>
       </div></td>
     </tr>`).join('');
 }
@@ -709,6 +710,13 @@ async function doScan() {
     result.className='scan-result show';
   }
   document.getElementById('scan-input').value='';
+}
+
+async function adminDeleteParcel(id) {
+  if (!confirm('确认删除此包裹？删除后不可恢复。')) return;
+  const { error } = await sbClient.from('parcels').delete().eq('id', id);
+  if (error) { alert('删除失败：'+error.message); return; }
+  await loadParcels(); renderDashboard();
 }
 
 async function quickCheckIn(id, event) {

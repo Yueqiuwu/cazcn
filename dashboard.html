@@ -545,7 +545,10 @@ function renderParcelList(parcels) {
           ${p.tracking_ca?`<div class="parcel-tracking">CA单号：${p.tracking_ca}</div>`:''}
           ${p.tracking_cn?`<div class="parcel-tracking">国际单号：${p.tracking_cn}</div>`:''}
         </div>
-        <div class="parcel-right"><span class="status-badge ${statusClass(p.status)}"><span class="status-dot"></span>${p.status}</span></div>
+        <div class="parcel-right">
+          <span class="status-badge ${statusClass(p.status)}"><span class="status-dot"></span>${p.status}</span>
+          ${p.status==='待入库'?`<button onclick="event.stopPropagation();deleteParcel('${p.id}')" style="margin-top:6px;padding:4px 10px;border-radius:6px;border:1.5px solid #f0c0c0;background:#fff0f0;color:#c00;font-size:12px;cursor:pointer;font-family:inherit;">删除</button>`:''}
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -803,6 +806,13 @@ async function changePassword() {
   document.getElementById('new-pwd').value='';
   document.getElementById('confirm-pwd').value='';
   alert('密码修改成功！');
+}
+
+async function deleteParcel(id) {
+  if (!confirm('确认删除此包裹？删除后不可恢复。')) return;
+  const { error } = await sbClient.from('parcels').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (error) { alert('删除失败：'+error.message); return; }
+  await loadParcels();
 }
 
 async function doLogout() { await sbClient.auth.signOut(); window.location.href='index.html'; }

@@ -353,7 +353,7 @@ tr:hover td { background: #fafaf8; }
           </div>
         </div>
         <table>
-          <thead><tr><th>用户</th><th>手机号</th><th>注册时间</th><th>包裹数</th><th>最近活跃</th><th>状态</th><th>操作</th></tr></thead>
+          <thead><tr><th>用户</th><th>专属代码</th><th>微信/手机</th><th>注册时间</th><th>包裹数</th><th>状态</th><th>操作</th></tr></thead>
           <tbody id="users-tbody"></tbody>
         </table>
       </div>
@@ -441,6 +441,7 @@ tr:hover td { background: #fafaf8; }
     <h2>用户详情</h2>
     <p class="modal-sub">张小明 的账户信息</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div style="background:var(--bg);border-radius:8px;padding:12px;grid-column:1/-1;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">专属代码</div><div id="user-code-display" style="font-family:monospace;font-size:18px;font-weight:700;color:var(--red);">—</div></div>
       <div style="background:var(--bg);border-radius:8px;padding:12px;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">手机号</div><div id="user-phone" style="font-size:14px;font-weight:600;">—</div></div>
       <div style="background:var(--bg);border-radius:8px;padding:12px;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">注册时间</div><div id="user-created" style="font-size:14px;font-weight:600;">—</div></div>
       <div style="background:var(--bg);border-radius:8px;padding:12px;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">总包裹数</div><div id="user-parcels" style="font-size:14px;font-weight:600;">—</div></div>
@@ -989,11 +990,12 @@ function renderUsers() {
     const color = colors[i%colors.length];
     const parcelsCount = dbParcels.filter(p=>p.user_id===u.id).length;
     return `<tr>
-      <td><div style="display:flex;align-items:center;gap:8px;"><div class="user-avatar-sm" style="background:${color};">${initial}</div><span style="font-weight:600">${u.name||'—'}</span></div></td>
-      <td style="color:var(--muted);font-size:13px">${u.phone||u.email||'—'}</td>
+      <td><div style="display:flex;align-items:center;gap:8px;"><div class="user-avatar-sm" style="background:${color};">${initial}</div><span style="font-weight:600">${u.name||'—'}</span></div>
+      <div style="font-size:11px;color:var(--muted);">${u.email||''}</div></td>
+      <td><span style="font-family:monospace;font-size:13px;font-weight:700;color:var(--red);">${u.user_code||'—'}</span></td>
+      <td style="color:var(--muted);font-size:13px">${u.phone||'—'}</td>
       <td style="font-size:12px;color:var(--muted)">${new Date(u.created_at).toLocaleDateString('zh-CN')}</td>
       <td><span style="font-weight:700">${parcelsCount}</span></td>
-      <td style="font-size:12px;color:var(--muted)">${u.last_active?new Date(u.last_active).toLocaleDateString('zh-CN'):'—'}</td>
       <td><span class="status-badge ${u.status==='active'?'s-received':'s-pending'}"><span class="status-dot"></span>${u.status==='active'?'正常':'禁用'}</span></td>
       <td><button class="btn-action" onclick="openUserModal('${u.id}')">查看</button></td>
     </tr>`;
@@ -1013,6 +1015,9 @@ function openUserModal(id) {
   document.getElementById('user-parcels').textContent = parcelsCount+' 件';
   document.getElementById('user-status').textContent = u.status==='active'?'正常':'已禁用';
   document.getElementById('user-note').value = u.note||'';
+  // 显示用户代码
+  const codeEl = document.getElementById('user-code-display');
+  if (codeEl) codeEl.textContent = u.user_code||'—';
   openModal('modal-user');
 }
 

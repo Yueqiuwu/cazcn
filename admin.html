@@ -302,6 +302,7 @@ tr:hover td { background: #fafaf8; }
         <p>输入或扫描加拿大快递单号，自动匹配系统包裹并标记入库</p>
         <div class="scan-input-row">
           <input type="text" id="scan-input" placeholder="输入或扫描快递单号…" onkeydown="if(event.key==='Enter') doScan()">
+          <input type="text" id="scan-remark" placeholder="备注（选填）" style="max-width:180px;padding:12px 16px;border:2px solid var(--border);border-radius:10px;font-size:14px;outline:none;font-family:inherit;">
           <button class="btn btn-primary" onclick="doScan()">确认入库</button>
         </div>
         <div class="scan-result" id="scan-result">
@@ -315,7 +316,7 @@ tr:hover td { background: #fafaf8; }
           <div class="table-title">待入库包裹 <span style="color:var(--red);font-weight:700;">3</span></div>
         </div>
         <table>
-          <thead><tr><th>商品</th><th>用户</th><th>CA快递单号</th><th>数量</th><th>提交时间</th><th>操作</th></tr></thead>
+          <thead><tr><th>商品</th><th>用户</th><th>CA快递单号</th><th>数量</th><th>提交时间</th><th>入库备注</th><th>操作</th></tr></thead>
           <tbody id="checkin-tbody"></tbody>
           </table>
       </div>
@@ -534,9 +535,10 @@ function renderCheckin() {
       <td class="td-tracking">${p.tracking_ca||'—'}</td>
       <td>${p.quantity}件</td>
       <td style="font-size:12px;color:var(--muted)">${new Date(p.submitted_at).toLocaleDateString('zh-CN')}</td>
+      <td style="min-width:160px;"><input type="text" id="remark-${p.id}" placeholder="入库备注（选填）" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;outline:none;font-family:inherit;"></td>
       <td><button class="btn-action green" onclick="checkIn('${p.id}','${p.item_name||'包裹'}','${p.users?.name||''}')">✓ 入库</button></td>
     </tr>`).join('')
-  : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);">暂无待入库包裹 🎉</td></tr>';
+  : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);">暂无待入库包裹 🎉</td></tr>';
   const title = document.querySelector('#page-checkin .table-title');
   if (title) title.innerHTML = `待入库包裹 <span style="color:var(--red);font-weight:700;">${pending.length}</span>`;
 }
@@ -651,52 +653,53 @@ function openStatusModal(id, tracking, status, trackingCn) {
   document.getElementById('status-tracking').value = tracking;
   document.getElementById('status-select').value = status;
   document.getElementById('status-tracking-cn').value = trackingCn;
-  document.getElementById('status-remark').value = '';
+  // 填入现有备注
+  const parcel = dbParcels.find(p=>p.id===id);
+  document.getElementById('status-remark').value = parcel?.remark||'';
   openModal('modal-status');
 }
 
 async function saveStatus() {
   const status = document.getElementById('status-select').value;
   const trackingCn = document.getElementById('status-tracking-cn').value.trim();
+  const remark = document.getElementById('status-remark').value.trim();
   const btn = document.getElementById('btn-save-status');
   btn.disabled=true; btn.textContent='保存中…';
   const update = { status, updated_at: new Date().toISOString() };
   if (trackingCn) update.tracking_cn = trackingCn;
+  update.remark = remark || null;
   const { error } = await sbClient.from('parcels').update(update).eq('id', currentParcelId);
   btn.disabled=false; btn.textContent='保存更新';
   if (error) { alert('更新失败：'+error.message); return; }
   closeModal('modal-status');
   await loadParcels();
   renderDashboard();
-  alert('状态已更新，客户将看到最新状态。');
+  alert('状态已更新！');
 }
 
 async function doScan() {
   const val = document.getElementById('scan-input').value.trim();
+  const remark = document.getElementById('scan-remark').value.trim();
   const result = document.getElementById('scan-result');
   const title = document.querySelector('.scan-result-title');
   if (!val) return;
-
-  // 先查系统里有没有这个单号
   const match = dbParcels.find(p => p.tracking_ca === val && p.status === '待入库');
-
   if (match) {
-    // 已有记录，直接入库
-    await checkIn(match.id, match.item_name||'包裹', match.users?.name||'');
+    const update = { status:'已入库', updated_at:new Date().toISOString() };
+    if (remark) update.remark = remark;
+    await sbClient.from('parcels').update(update).eq('id', match.id);
     title.textContent = '✅ 入库成功';
     result.style.background='var(--green-light)'; result.style.borderColor='#b2dfb8';
-    document.getElementById('scan-result-text').textContent = `${match.item_name||'包裹'}（${match.users?.name||'未知客户'}）已标记入库`;
+    document.getElementById('scan-result-text').textContent = `${match.item_name||'包裹'}（${match.users?.name||'未知客户'}）已标记入库${remark?'，备注：'+remark:''}`;
     result.className='scan-result show';
+    await loadParcels(); renderDashboard();
   } else {
-    // 没有记录，创建无主包裹并标记已入库
+    const update = { status:'已入库', updated_at:new Date().toISOString() };
+    if (remark) update.remark = remark;
     const { data, error } = await sbClient.from('parcels').insert({
-      tracking_ca: val,
-      status: '已入库',
-      quantity: 1,
-      item_name: null,
-      user_id: null
+      tracking_ca: val, status: '已入库', quantity: 1,
+      item_name: null, user_id: null, remark: remark||null
     }).select().single();
-
     if (error) {
       title.textContent = '❌ 录入失败';
       result.style.background='#fff0f0'; result.style.borderColor='#f0b0b0';
@@ -704,12 +707,13 @@ async function doScan() {
     } else {
       title.textContent = '📦 已创建并入库';
       result.style.background='#fffbe6'; result.style.borderColor='#f0d060';
-      document.getElementById('scan-result-text').textContent = `单号 ${val} 已入库，等待客户预报认领`;
+      document.getElementById('scan-result-text').textContent = `单号 ${val} 已入库，等待客户预报认领${remark?'，备注：'+remark:''}`;
       await loadParcels(); renderDashboard();
     }
     result.className='scan-result show';
   }
   document.getElementById('scan-input').value='';
+  document.getElementById('scan-remark').value='';
 }
 
 async function adminDeleteParcel(id) {
@@ -728,10 +732,14 @@ async function quickCheckIn(id, event) {
 }
 
 async function checkIn(id, name, user) {
-  const { error } = await sbClient.from('parcels').update({ status:'已入库', updated_at:new Date().toISOString() }).eq('id', id);
+  const remarkEl = document.getElementById('remark-'+id);
+  const remark = remarkEl ? remarkEl.value.trim() : '';
+  const update = { status:'已入库', updated_at:new Date().toISOString() };
+  if (remark) update.remark = remark;
+  const { error } = await sbClient.from('parcels').update(update).eq('id', id);
   if (error) { alert('操作失败：'+error.message); return; }
   await loadParcels(); renderDashboard();
-  alert(`${name}（${user}）已成功入库！`);
+  alert(`${name}（${user}）已成功入库！${remark?'\n备注：'+remark:''}`);
 }
 
 let currentPackFilter = 'pending';

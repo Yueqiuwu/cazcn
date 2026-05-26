@@ -142,6 +142,9 @@ tr:hover td { background: #fafaf8; }
 .bar.highlight { background: var(--red); }
 .bar-label { font-size: 9px; color: var(--muted); text-align: center; margin-top: 3px; }
 
+.editable-cell { cursor: pointer; border-radius: 4px; transition: background 0.15s; }
+.editable-cell:hover { background: #fff8e6; }
+
 /* NOTIFICATION DOT */
 .notif-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); display: inline-block; margin-left: 4px; vertical-align: middle; }
 
@@ -614,10 +617,10 @@ function renderMiniChart() {
 function renderParcels(data) {
   document.getElementById('parcel-tbody').innerHTML = data.map(p => `
     <tr>
-      <td><div class="td-name">${p.item_name||'未命名'}</div></td>
-      <td style="font-weight:500">${p.users?.name||'—'}</td>
-      <td class="td-tracking">${p.tracking_ca||'—'}</td>
-      <td>${p.quantity}件</td>
+      <td><div class="td-name editable-cell" onclick="editCell(this,'${p.id}','item_name')" title="点击编辑">${p.item_name||'未命名'}</div></td>
+      <td style="font-weight:500" class="editable-cell" onclick="editCell(this,'${p.id}','user_display')" title="点击编辑">${p.users?.name||'—'}</td>
+      <td class="td-tracking editable-cell" onclick="editCell(this,'${p.id}','tracking_ca')" title="点击编辑">${p.tracking_ca||'—'}</td>
+      <td class="editable-cell" onclick="editCell(this,'${p.id}','quantity')" title="点击编辑">${p.quantity}件</td>
       <td style="font-size:12px;white-space:nowrap">${p.route||'—'}</td>
       <td><span class="status-badge ${sClass(p.status)}"><span class="status-dot"></span>${p.status}</span></td>
       <td style="font-size:12px;color:var(--muted)">${new Date(p.submitted_at).toLocaleDateString('zh-CN')}</td>
@@ -627,6 +630,51 @@ function renderParcels(data) {
         <button class="btn-action" style="color:#c00;border-color:#f0c0c0;" onclick="adminDeleteParcel('${p.id}')">删除</button>
       </div></td>
     </tr>`).join('');
+}
+
+function editCell(el, parcelId, field) {
+  if (el.querySelector('input')) return; // 已在编辑中
+  const original = el.innerText.replace('件','').trim();
+  const input = document.createElement('input');
+  input.value = original === '—' ? '' : original;
+  input.style.cssText = 'width:100%;padding:4px 8px;border:1.5px solid var(--red);border-radius:6px;font-size:13px;outline:none;font-family:inherit;';
+  el.innerHTML = '';
+  el.appendChild(input);
+  input.focus();
+  input.select();
+
+  async function save() {
+    const newVal = input.value.trim();
+    el.innerHTML = newVal || '—';
+    if (newVal === original || (!newVal && original === '—')) return;
+    const update = { updated_at: new Date().toISOString() };
+    if (field === 'quantity') {
+      const num = parseInt(newVal);
+      if (isNaN(num) || num < 1) { el.innerHTML = original+'件'; return; }
+      update.quantity = num;
+      el.innerHTML = num+'件';
+    } else if (field === 'item_name') {
+      update.item_name = newVal || null;
+    } else if (field === 'tracking_ca') {
+      update.tracking_ca = newVal || null;
+    } else if (field === 'user_display') {
+      // 修改备注/显示名，不改 user_id
+      update.item_name = dbParcels.find(p=>p.id===parcelId)?.item_name || null;
+      el.innerHTML = newVal||'—';
+      return; // 用户名不直接改，只显示
+    }
+    const { error } = await sbClient.from('parcels').update(update).eq('id', parcelId);
+    if (error) { alert('保存失败：'+error.message); await loadParcels(); }
+    // 更新本地数据
+    const p = dbParcels.find(p=>p.id===parcelId);
+    if (p) Object.assign(p, update);
+  }
+
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { input.blur(); }
+    if (e.key === 'Escape') { el.innerHTML = original+(field==='quantity'?'件':''); }
+  });
 }
 
 function filterParcels(btn, status) {

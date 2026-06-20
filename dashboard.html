@@ -1000,6 +1000,13 @@ function closeModal(id){document.getElementById(id).classList.remove('show');}
 const TRACK_KEY='C8D8FFB55120451ED5D99AFFED2FBF4B';
 async function queryTracking(num) {
   try {
+    // 先注册单号（确保 17track 开始追踪）
+    await fetch('https://api.17track.net/track/v2.2/register', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','17token':TRACK_KEY},
+      body:JSON.stringify([{number:num}])
+    });
+    // 再查询物流信息
     const res=await fetch('https://api.17track.net/track/v2.2/gettrackinfo',{method:'POST',headers:{'Content-Type':'application/json','17token':TRACK_KEY},body:JSON.stringify([{number:num}])});
     const data=await res.json();
     if(data.code===0&&data.data?.accepted?.length>0)return data.data.accepted[0].track;
@@ -1053,7 +1060,7 @@ async function openDetail(idx) {
     const track=await queryTracking(p.tracking_cn);
     const el=document.getElementById('live-tracking'); if(!el)return;
     if(track&&track.z&&track.z.length>0){el.innerHTML=`<div class="timeline">${renderTrackEvents(track.z)}</div>`;}
-    else{el.innerHTML=`<div style="color:var(--muted);font-size:13px;">暂未查询到物流信息，可能尚未更新。</div><a href="https://t.17track.net/zh-cn#nums=${p.tracking_cn}" target="_blank" style="display:inline-block;margin-top:10px;color:var(--red);font-size:13px;font-weight:600;text-decoration:none;">🔗 在 17track 官网查看 →</a>`;}
+    else{el.innerHTML=`<div style="color:var(--muted);font-size:13px;">暂未查询到物流信息，包裹可能还在途中，请稍后再试。</div>`;}
   }
 }
 function setBottomNav(id) {

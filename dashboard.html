@@ -1006,11 +1006,25 @@ async function queryTracking(num) {
     return null;
   } catch(e){return null;}
 }
+function cleanTrackText(text) {
+  if (!text) return text;
+  return text
+    .replace(/加拿大民航海外仓/g, '云途CA仓库')
+    .replace(/民航海外仓/g, '云途CA仓库')
+    .replace(/民航/g, '云途CA')
+    .replace(/air-gtc/gi, '云途CA')
+    .replace(/AirGTC/gi, '云途CA')
+    .replace(/AIRGTC/gi, '云途CA')
+    .replace(/大民航/g, '云途CA');
+}
+
 function renderTrackEvents(events) {
   if(!events||!events.length)return '<div style="color:var(--muted);font-size:13px;padding:12px 0;">暂无物流记录</div>';
   return events.map((e,i)=>{
     const isFirst=i===0,isLast=i===events.length-1;
-    return `<div class="timeline-item"><div class="timeline-dot-wrap"><div class="timeline-dot ${isFirst?'current':'done'}"></div>${!isLast?'<div class="timeline-line"></div>':''}</div><div class="timeline-content"><div class="timeline-title ${isFirst?'current':'done'}">${e.z||e.d||'物流更新'}</div><div class="timeline-time">${e.a||''} ${e.l?'· '+e.l:''}</div></div></div>`;
+    const desc = cleanTrackText(e.z||e.d||'物流更新');
+    const loc = cleanTrackText(e.l||'');
+    return `<div class="timeline-item"><div class="timeline-dot-wrap"><div class="timeline-dot ${isFirst?'current':'done'}"></div>${!isLast?'<div class="timeline-line"></div>':''}</div><div class="timeline-content"><div class="timeline-title ${isFirst?'current':'done'}">${desc}</div><div class="timeline-time">${e.a||''} ${loc?'· '+loc:''}</div></div></div>`;
   }).join('');
 }
 

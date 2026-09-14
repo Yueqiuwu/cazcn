@@ -178,6 +178,7 @@ tr:hover td { background: #fafaf8; }
 
     <div class="nav-section">用户</div>
     <button class="nav-item" onclick="showPage('users',this)"><span class="nav-icon">👥</span><span>用户列表</span></button>
+    <button class="nav-item" onclick="showPage('messages',this)"><span class="nav-icon">✉️</span><span>客服留言</span></button>
 
     <div class="nav-section">系统</div>
     <button class="nav-item" onclick="window.open('dashboard.html')"><span class="nav-icon">👤</span><span>用户视角</span></button>
@@ -343,6 +344,26 @@ tr:hover td { background: #fafaf8; }
         <table>
           <thead><tr><th>合箱单号</th><th>用户</th><th>件数</th><th>线路</th><th>收货地址</th><th>重量/运费</th><th>国内运单号</th><th>支付</th><th>操作</th></tr></thead>
           <tbody id="pack-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MESSAGES PAGE -->
+    <div class="page" id="page-messages">
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="table-title">客服留言</div>
+          <div class="table-actions">
+            <select id="msg-filter" onchange="filterMessages(this.value)" class="filter-select">
+              <option value="all">全部</option>
+              <option value="unread">未读</option>
+              <option value="read">已读</option>
+            </select>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>姓名</th><th>联系方式</th><th>留言内容</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="messages-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -544,6 +565,49 @@ function renderCheckin() {
   : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);">暂无待入库包裹 🎉</td></tr>';
   const title = document.querySelector('#page-checkin .table-title');
   if (title) title.innerHTML = `待入库包裹 <span style="color:var(--red);font-weight:700;">${pending.length}</span>`;
+}
+
+// ── MESSAGES ──
+let dbMessages = [];
+
+async function loadMessages() {
+  const { data } = await sbClient.from('messages').select('*').order('created_at', { ascending: false });
+  dbMessages = data || [];
+  renderMessages(dbMessages);
+}
+
+function filterMessages(status) {
+  const filtered = status === 'all' ? dbMessages : dbMessages.filter(m=>m.status===status);
+  renderMessages(filtered);
+}
+
+function renderMessages(data) {
+  const tbody = document.getElementById('messages-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = data.length ? data.map(m => `
+    <tr style="${m.status==='unread'?'background:#fffbe6;':''}" id="msg-row-${m.id}">
+      <td style="font-weight:600">${m.name}</td>
+      <td style="font-size:13px;color:var(--muted)">${m.email||m.wechat||'—'}</td>
+      <td style="font-size:13px;max-width:300px;">${m.content}</td>
+      <td style="font-size:12px;color:var(--muted);white-space:nowrap">${new Date(m.created_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${m.status==='unread'?'<span class="status-badge s-pending">未读</span>':'<span class="status-badge s-delivered">已读</span>'}</td>
+      <td><div class="td-actions">
+        ${m.status==='unread'?`<button class="btn-action green" onclick="markMessageRead('${m.id}')">✓ 标记已读</button>`:''}
+        <button class="btn-action" style="color:#c00;border-color:#f0c0c0;" onclick="deleteMessage('${m.id}')">删除</button>
+      </div></td>
+    </tr>`).join('')
+  : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);">暂无留言</td></tr>';
+}
+
+async function markMessageRead(id) {
+  await sbClient.from('messages').update({status:'read'}).eq('id',id);
+  await loadMessages();
+}
+
+async function deleteMessage(id) {
+  if (!confirm('确认删除此留言？')) return;
+  await sbClient.from('messages').delete().eq('id',id);
+  await loadMessages();
 }
 
 async function loadUsers() {
@@ -1097,10 +1161,11 @@ function showPage(page, el) {
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el) el.classList.add('active');
-  const titles={dashboard:'数据总览',parcels:'所有包裹',checkin:'入库录入',packing:'出库申请',users:'用户列表'};
+  const titles={dashboard:'数据总览',parcels:'所有包裹',checkin:'入库录入',packing:'出库申请',users:'用户列表',messages:'客服留言'};
   document.getElementById('page-title').textContent=titles[page]||'';
   if(page==='parcels') loadParcels();
   if(page==='packing') loadPackRequests();
+  if(page==='messages') loadMessages();
 }
 
 function openModal(id){document.getElementById(id).classList.add('show');}
